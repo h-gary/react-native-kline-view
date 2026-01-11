@@ -166,8 +166,13 @@ public class MainDraw implements IChartDraw<ICandle> {
                     HTKLineTargetItem targetItem = (HTKLineTargetItem) point.maList.get(i);
                     this.primaryPaint.setColor(view.configManager.targetColorList[view.configManager.maList.get(i).index]);
                     StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.append("MA");
-                    stringBuilder.append(targetItem.title);
+                    String title = targetItem.title == null ? "" : targetItem.title;
+                    if ("VWAP".equalsIgnoreCase(title)) {
+                        stringBuilder.append("VWAP");
+                    } else {
+                        stringBuilder.append("MA");
+                        stringBuilder.append(title);
+                    }
                     stringBuilder.append(":");
                     stringBuilder.append(view.formatValue(targetItem.value));
                     stringBuilder.append(space);

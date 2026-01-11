@@ -734,6 +734,7 @@ class App extends Component {
 	isKDJSelected = () => this.state.selectedSubIndicator === 4
 	isRSISelected = () => this.state.selectedSubIndicator === 5
 	isWRSelected = () => this.state.selectedSubIndicator === 6
+	isVWAPTarget = (item) => item && typeof item.title === 'string' && item.title.toUpperCase() === 'VWAP'
 
 	// 获取目标配置列表
 	getTargetList = () => {
@@ -742,6 +743,7 @@ class App extends Component {
 				{ title: '5', selected: this.isMASelected(), index: 0 },
 				{ title: '10', selected: this.isMASelected(), index: 1 },
 				{ title: '20', selected: this.isMASelected(), index: 2 },
+				{ title: 'VWAP', selected: this.isMASelected(), index: 3, type: 'vwap' },
 			],
 			maVolumeList: [
 				{ title: '5', selected: true, index: 0 },
@@ -771,12 +773,22 @@ class App extends Component {
 		let processedData = [...data]
 		
 		// 计算MA指标
-		const selectedMAPeriods = targetList.maList
-			.filter(item => item.selected)
-			.map(item => ({ period: parseInt(item.title, 10), index: item.index }))
+		const selectedMainTargets = targetList.maList.filter(item => item.selected)
+		const selectedMAPeriods = selectedMainTargets
+			.filter(item => !this.isVWAPTarget(item))
+			.map(item => ({ period: parseInt(item.title, 10), index: item.index, title: item.title }))
+			.filter(item => !Number.isNaN(item.period))
+		const selectedVWAPTargets = selectedMainTargets.filter(item => this.isVWAPTarget(item))
+		const maListLength = selectedMainTargets.length
+			? Math.max(...selectedMainTargets.map(item => item.index)) + 1
+			: 0
 		
 		if (selectedMAPeriods.length > 0) {
-			processedData = this.calculateMAWithConfig(processedData, selectedMAPeriods)
+			processedData = this.calculateMAWithConfig(processedData, selectedMAPeriods, maListLength)
+		}
+
+		if (selectedVWAPTargets.length > 0) {
+			processedData = this.calculateVWAPWithConfig(processedData, selectedVWAPTargets[0], maListLength)
 		}
 		
 		// 计算成交量MA指标
@@ -831,22 +843,43 @@ class App extends Component {
 	}
 
 	// 根据配置计算MA指标
-	calculateMAWithConfig = (data, periodConfigs) => {
+	calculateMAWithConfig = (data, periodConfigs, maListLength) => {
 		return data.map((item, index) => {
-			const maList = new Array(3) // 固定3个位置
+			const maList = new Array(Math.max(maListLength, 1))
 			
 			periodConfigs.forEach(config => {
 				if (index < config.period - 1) {
-					maList[config.index] = { value: item.close, title: `${config.period}` }
+					maList[config.index] = { value: item.close, title: `${config.period}`, index: config.index }
 				} else {
 					let sum = 0
 					for (let i = index - config.period + 1; i <= index; i++) {
 						sum += data[i].close
 					}
-					maList[config.index] = { value: sum / config.period, title: `${config.period}` }
+					maList[config.index] = { value: sum / config.period, title: `${config.period}`, index: config.index }
 				}
 			})
 			
+			return { ...item, maList }
+		})
+	}
+
+	// 计算VWAP指标（成交量加权平均价）
+	calculateVWAPWithConfig = (data, vwapConfig, maListLength) => {
+		let cumulativeVolume = 0
+		let cumulativePV = 0
+
+		return data.map((item) => {
+			const typicalPrice = (item.high + item.low + item.close) / 3
+			cumulativeVolume += item.volume
+			cumulativePV += typicalPrice * item.volume
+			const vwap = cumulativeVolume === 0 ? 0 : cumulativePV / cumulativeVolume
+
+			const maList = Array.isArray(item.maList) ? item.maList.slice() : new Array(Math.max(maListLength, 1))
+			if (maList.length < maListLength) {
+				maList.length = maListLength
+			}
+			maList[vwapConfig.index] = { value: vwap, title: vwapConfig.title || 'VWAP', index: vwapConfig.index }
+
 			return { ...item, maList }
 		})
 	}
@@ -945,8 +978,9 @@ class App extends Component {
 		if (this.isMASelected() && item.maList) {
 			item.maList.forEach((maItem, index) => {
 				if (maItem && maItem.title) {
+					const isVWAP = this.isVWAPTarget(maItem)
 					item.selectedItemList.push({
-						title: `MA${maItem.title}`,
+						title: isVWAP ? 'VWAP' : `MA${maItem.title}`,
 						detail: fixRound(maItem.value, priceCount, false, false)
 					})
 				}

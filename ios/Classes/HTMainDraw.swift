@@ -107,7 +107,8 @@ class HTMainDraw: NSObject, HTKLineDrawProtocol {
                 var x = baseX
                 for (i, itemModel) in configManager.maList.enumerated() {
                     let item = model.maList[i]
-                    let title = String(format: "MA%@:%@", item.title, configManager.precision(item.value, configManager.price))
+                    let prefix = item.title.uppercased() == "VWAP" ? "VWAP" : "MA\(item.title)"
+                    let title = String(format: "%@:%@", prefix, configManager.precision(item.value, configManager.price))
                     let color = configManager.targetColorList[itemModel.index]
                     let font = configManager.createFont(configManager.headerTextFontSize)
                     x += drawText(title: title, point: CGPoint.init(x: x, y: baseY), color: color, font: font, context: context, configManager: configManager)
