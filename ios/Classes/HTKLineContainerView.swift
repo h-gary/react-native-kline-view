@@ -17,6 +17,12 @@ class HTKLineContainerView: UIView {
     
     @objc var onDrawPointComplete: RCTBubblingEventBlock?
     
+    @objc var doubleTapToFitAll: Bool = false {
+        didSet {
+            klineView.shouldDoubleTapFitAll = doubleTapToFitAll
+        }
+    }
+    
     @objc var optionList: String? {
         didSet {
             guard let optionList = optionList else {
@@ -59,6 +65,7 @@ class HTKLineContainerView: UIView {
 
     lazy var klineView: HTKLineView = {
         let klineView = HTKLineView.init(CGRect.zero, configManager)
+        klineView.shouldDoubleTapFitAll = doubleTapToFitAll
         return klineView
     }()
     

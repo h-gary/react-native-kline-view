@@ -930,6 +930,28 @@ public abstract class BaseKLineChartView extends ScrollAndScaleView implements D
         initLottieView();
         invalidate();
     }
+    
+    public void fitAllBarsToBounds() {
+        if (mItemCount <= 0 || mDataLen <= 0) {
+            return;
+        }
+        float availableWidth = mWidth - configManager.paddingRight;
+        if (availableWidth <= 0) {
+            return;
+        }
+        float targetScale = availableWidth / mDataLen;
+        if (targetScale <= 0) {
+            return;
+        }
+        if (targetScale > getScaleXMax()) {
+            setScaleXMax(targetScale);
+        }
+        float oldScale = mScaleX;
+        mScaleX = targetScale;
+        onScaleChanged(mScaleX, oldScale);
+        setScrollX(0);
+        invalidate();
+    }
 
     /**
      * MA/BOLL切换及隐藏

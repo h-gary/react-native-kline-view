@@ -247,5 +247,9 @@ public class HTKLineContainerView extends RelativeLayout {
             shotView.setPoint(new HTPoint(event.getX(), event.getY()));
         }
     }
+    
+    public void setDoubleTapToFitAll(boolean doubleTapToFitAll) {
+        klineView.setShouldDoubleTapFitAll(doubleTapToFitAll);
+    }
 
 }

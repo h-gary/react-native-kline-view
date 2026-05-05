@@ -13,6 +13,12 @@ class HTKLineView: UIScrollView {
         
     var configManager: HTKLineConfigManager
     
+    var shouldDoubleTapFitAll = false
+    
+    var minScale: CGFloat = 0.3
+    
+    var maxScale: CGFloat = 3
+    
     lazy var drawContext: HTDrawContext = {
         let drawContext = HTDrawContext.init(self, configManager)
         return drawContext
@@ -74,9 +80,17 @@ class HTKLineView: UIScrollView {
         showsVerticalScrollIndicator = false
         backgroundColor = UIColor.clear
 
-        addGestureRecognizer(UILongPressGestureRecognizer.init(target: self, action: #selector(longPressSelector)))
-        addGestureRecognizer(UITapGestureRecognizer.init(target: self, action: #selector(tapSelector)))
-        addGestureRecognizer(UIPinchGestureRecognizer.init(target: self, action: #selector(pinchSelector)))
+        let longPressGesture = UILongPressGestureRecognizer.init(target: self, action: #selector(longPressSelector))
+        let singleTapGesture = UITapGestureRecognizer.init(target: self, action: #selector(tapSelector))
+        let doubleTapGesture = UITapGestureRecognizer.init(target: self, action: #selector(doubleTapSelector))
+        doubleTapGesture.numberOfTapsRequired = 2
+        singleTapGesture.require(toFail: doubleTapGesture)
+        let pinchGesture = UIPinchGestureRecognizer.init(target: self, action: #selector(pinchSelector))
+        
+        addGestureRecognizer(longPressGesture)
+        addGestureRecognizer(singleTapGesture)
+        addGestureRecognizer(doubleTapGesture)
+        addGestureRecognizer(pinchGesture)
     }
 
     required init?(coder: NSCoder) {
@@ -728,6 +742,36 @@ extension HTKLineView: UIScrollViewDelegate {
         selectedIndex = -1
         self.setNeedsDisplay()
     }
+    
+    @objc
+    func doubleTapSelector(_ gesture: UITapGestureRecognizer) {
+        selectedIndex = -1
+        guard shouldDoubleTapFitAll else {
+            self.setNeedsDisplay()
+            return
+        }
+        fitAllModelsToBounds()
+    }
+    
+    func fitAllModelsToBounds() {
+        let modelCount = configManager.modelArray.count
+        let availableWidth = bounds.size.width - configManager.paddingRight
+        let baseContentWidth = configManager._itemWidth * CGFloat(modelCount)
+        guard modelCount > 0,
+              availableWidth > 0,
+              baseContentWidth > 0 else {
+            self.setNeedsDisplay()
+            return
+        }
+        
+        let targetScale = availableWidth / baseContentWidth
+        scale = targetScale
+        maxScale = max(maxScale, targetScale)
+        
+        reloadContentSize()
+        reloadContentOffset(0)
+        scrollViewDidScroll(self)
+    }
 
     @objc
     func pinchSelector(_ gesture: UIPinchGestureRecognizer) {
@@ -737,7 +781,7 @@ extension HTKLineView: UIScrollViewDelegate {
         default:
             break
         }
-        scale = max(0.3, min(scale, 3))
+        scale = max(minScale, min(scale, maxScale))
 
         let width = bounds.size.width
         let halfWidth = width / 2

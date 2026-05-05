@@ -79,6 +79,11 @@ public class RNKLineView extends SimpleViewManager<HTKLineContainerView> {
         containerView.setPriceLines(parsePriceLines(priceLines));
         containerView.postInvalidate();
     }
+    
+    @ReactProp(name = "doubleTapToFitAll", defaultBoolean = false)
+    public void setDoubleTapToFitAll(final HTKLineContainerView containerView, boolean doubleTapToFitAll) {
+        containerView.setDoubleTapToFitAll(doubleTapToFitAll);
+    }
 
     private List<HTKLineReferenceLine> parsePriceLines(ReadableArray priceLines) {
         List<HTKLineReferenceLine> lines = new ArrayList<>();
