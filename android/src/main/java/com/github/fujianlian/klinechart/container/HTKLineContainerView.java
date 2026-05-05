@@ -9,9 +9,11 @@ import com.facebook.react.bridge.*;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
 import com.github.fujianlian.klinechart.HTKLineConfigManager;
+import com.github.fujianlian.klinechart.HTKLineReferenceLine;
 import com.github.fujianlian.klinechart.KLineChartView;
 import com.github.fujianlian.klinechart.RNKLineView;
 import com.github.fujianlian.klinechart.formatter.DateFormatter;
+import java.util.List;
 
 
 public class HTKLineContainerView extends RelativeLayout {
@@ -23,6 +25,8 @@ public class HTKLineContainerView extends RelativeLayout {
     public KLineChartView klineView;
 
     public HTShotView shotView;
+
+    private List<HTKLineReferenceLine> priceLines = null;
 
     public HTKLineContainerView(ThemedReactContext context) {
         super(context);
@@ -56,6 +60,9 @@ public class HTKLineContainerView extends RelativeLayout {
         klineView.setMainDrawLine(klineView.configManager.isMinute);
         klineView.setPointWidth(klineView.configManager.itemWidth);
         klineView.setCandleWidth(klineView.configManager.candleWidth);
+        if (priceLines != null) {
+            configManager.referenceLineList = priceLines;
+        }
 
         if (klineView.configManager.fontFamily.length() > 0) {
             klineView.setTextFontFamily(klineView.configManager.fontFamily);
@@ -161,6 +168,18 @@ public class HTKLineContainerView extends RelativeLayout {
 
     }
 
+    public void setPriceLines(List<HTKLineReferenceLine> priceLines) {
+        this.priceLines = priceLines;
+        if (priceLines != null) {
+            configManager.referenceLineList = priceLines;
+        } else {
+            configManager.referenceLineList = new java.util.ArrayList<>();
+        }
+        if (klineView != null) {
+            klineView.invalidate();
+        }
+    }
+
     private HTPoint convertLocation(HTPoint location) {
         HTPoint reloadLocation = new HTPoint(location.x, location.y);
         reloadLocation.x = Math.max(0, Math.min(reloadLocation.x, getWidth()));
@@ -227,6 +246,10 @@ public class HTKLineContainerView extends RelativeLayout {
         } else {
             shotView.setPoint(new HTPoint(event.getX(), event.getY()));
         }
+    }
+    
+    public void setDoubleTapToFitAll(boolean doubleTapToFitAll) {
+        klineView.setShouldDoubleTapFitAll(doubleTapToFitAll);
     }
 
 }

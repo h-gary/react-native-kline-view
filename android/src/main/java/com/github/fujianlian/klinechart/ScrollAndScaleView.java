@@ -15,6 +15,7 @@ import android.widget.RelativeLayout;
  */
 public abstract class ScrollAndScaleView extends RelativeLayout implements
         GestureDetector.OnGestureListener,
+        GestureDetector.OnDoubleTapListener,
         ScaleGestureDetector.OnScaleGestureListener {
     protected int mScrollX = 0;
     protected GestureDetectorCompat mDetector;
@@ -61,6 +62,7 @@ public abstract class ScrollAndScaleView extends RelativeLayout implements
     private void init() {
         setWillNotDraw(false);
         mDetector = new GestureDetectorCompat(getContext(), this);
+        mDetector.setOnDoubleTapListener(this);
         mScaleDetector = new ScaleGestureDetector(getContext(), this);
         mScroller = new OverScroller(getContext());
         this.setClickable(true);
@@ -80,6 +82,21 @@ public abstract class ScrollAndScaleView extends RelativeLayout implements
 
     @Override
     public boolean onSingleTapUp(MotionEvent e) {
+        return false;
+    }
+    
+    @Override
+    public boolean onDoubleTap(MotionEvent e) {
+        return false;
+    }
+    
+    @Override
+    public boolean onDoubleTapEvent(MotionEvent e) {
+        return false;
+    }
+    
+    @Override
+    public boolean onSingleTapConfirmed(MotionEvent e) {
         return false;
     }
 

@@ -25,6 +25,7 @@ import static android.graphics.Typeface.NORMAL;
 public class KLineChartView extends BaseKLineChartView {
 
     ProgressBar mProgressBar;
+    private boolean shouldDoubleTapFitAll = false;
     private boolean isRefreshing = false;
     private boolean isLoadMoreEnd = false;
     private boolean mLastScrollEnable;
@@ -215,6 +216,20 @@ public class KLineChartView extends BaseKLineChartView {
     public void hideSelectData() {
         isLongPress = false;
         // invalidate();
+    }
+    
+    public void setShouldDoubleTapFitAll(boolean shouldDoubleTapFitAll) {
+        this.shouldDoubleTapFitAll = shouldDoubleTapFitAll;
+    }
+    
+    @Override
+    public boolean onDoubleTap(MotionEvent e) {
+        if (!shouldDoubleTapFitAll) {
+            return super.onDoubleTap(e);
+        }
+        isLongPress = false;
+        fitAllBarsToBounds();
+        return true;
     }
 
     /**

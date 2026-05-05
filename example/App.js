@@ -686,6 +686,22 @@ class App extends Component {
 				android: ''
 			}),
       closePriceRightLightLottieSource: '',
+			referenceLineWidth: 1 * pixelRatio,
+			referenceLineDashWidth: 4 * pixelRatio,
+			referenceLineDashSpace: 4 * pixelRatio,
+			referenceLineList: (() => {
+				if (!modelArray || modelArray.length === 0) {
+					return []
+				}
+				const last = modelArray[modelArray.length - 1]
+				const prev = modelArray[modelArray.length - 2] || last
+				return [
+					{ key: 'prevClose', value: prev.close, color: processColor(theme.detailColor) },
+					{ key: 'open', value: last.open, color: processColor(theme.increaseColor) },
+					{ key: 'high', value: last.high, color: processColor(theme.increaseColor) },
+					{ key: 'low', value: last.low, color: processColor(theme.decreaseColor) },
+				]
+			})(),
 		}
 
 		// 使用统一的目标配置

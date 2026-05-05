@@ -118,6 +118,27 @@ public class MainDraw implements IChartDraw<ICandle> {
         canvas.drawPath(gradientPath, minuteGradientPaint);
         canvas.drawPath(path, mLinePaint);
 
+        if (primaryStatus == PrimaryStatus.MA && view.configManager.maList.size() > 0) {
+            for (int i = startIndex; i <= stopIndex; i++) {
+                if (i < 0 || i >= view.configManager.modelArray.size()) {
+                    continue;
+                }
+                KLineEntity currentItem = (KLineEntity) view.getItem(i);
+                KLineEntity lastItem = i == 0 ? currentItem : (KLineEntity) view.getItem(i - 1);
+                float currentX = view.getItemMiddleScrollX(i);
+                float lastX = i == 0 ? currentX : view.getItemMiddleScrollX(i - 1);
+                for (int j = 0; j < view.configManager.maList.size(); j++) {
+                    if (currentItem.maList.size() <= j || lastItem.maList.size() <= j) {
+                        continue;
+                    }
+                    HTKLineTargetItem currentTargetItem = (HTKLineTargetItem) currentItem.maList.get(j);
+                    HTKLineTargetItem lastTargetItem = (HTKLineTargetItem) lastItem.maList.get(j);
+                    primaryPaint.setColor(view.configManager.targetColorList[view.configManager.maList.get(j).index]);
+                    view.drawMainLine(canvas, primaryPaint, lastX, lastTargetItem.value, currentX, currentTargetItem.value);
+                }
+            }
+        }
+
     }
 
     @Override

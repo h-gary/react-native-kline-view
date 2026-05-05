@@ -162,6 +162,9 @@ public class HTKLineConfigManager {
     public List<HTKLineTargetItem> rsiList = new ArrayList();
     public List<HTKLineTargetItem> wrList = new ArrayList();
 
+    public List<HTKLineReferenceLine> referenceLineList = new ArrayList();
+    public List<HTKLineCustomLabel> customLabelList = new ArrayList();
+    
     public static Typeface font = null;
 
     public static Typeface findFont(Context context, String fontFamily) {
@@ -425,7 +428,21 @@ public class HTKLineConfigManager {
         this.minuteGradientColorList = parseColorList(configList.get("minuteGradientColorList"));
         this.minuteGradientLocationList = parseLocationList(configList.get("minuteGradientLocationList"));
 
-        
+        List labelList = (List) optionList.get("labelList");
+        if (labelList != null) {
+            this.customLabelList = HTKLineCustomLabel.packModelArray(labelList, this.candleTextColor);
+        } else {
+            this.customLabelList = new ArrayList<>();
+        }
+
+        List referenceLineList = (List) optionList.get("priceLines");
+        if (referenceLineList != null) {
+            this.referenceLineList = HTKLineReferenceLine.packModelArray(referenceLineList);
+        } else {
+            this.referenceLineList = new ArrayList<>();
+        }
+
     }
 
 }
+

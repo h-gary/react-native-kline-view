@@ -12,5 +12,8 @@ RCT_EXPORT_VIEW_PROPERTY(onDrawPointComplete, RCTBubblingEventBlock)
 
 RCT_EXPORT_VIEW_PROPERTY(optionList, NSString)
 
-@end
+RCT_EXPORT_VIEW_PROPERTY(priceLines, NSArray)
 
+RCT_EXPORT_VIEW_PROPERTY(doubleTapToFitAll, BOOL)
+
+@end

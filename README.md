@@ -104,6 +104,62 @@ The example app demonstrates:
 | `onDrawItemDidTouch` | function | ❌ | - | Callback when a drawing item is touched |
 | `onDrawItemComplete` | function | ❌ | - | Callback when a drawing item is completed |
 | `onDrawPointComplete` | function | ❌ | - | Callback when drawing point is completed |
+| `priceLines` | Array | ❌ | - | Programmatic horizontal dotted lines for key price levels |
+
+### Price Lines (priceLines)
+
+`priceLines` lets you render multiple programmatic horizontal dotted lines (non-interactive) that follow the Y-axis scale and re-render on zoom/pan.
+
+```js
+<KLineView
+  optionList={...}
+  priceLines={[
+    {
+      id: 'prevClose',
+      price: 102.34,
+      color: processColor('#999999'),
+      dash: [4, 4],
+      label: 'Prev Close',
+      labelPosition: 'right',
+    },
+    {
+      id: 'open',
+      price: 103.1,
+      color: processColor('#4CAF50'),
+      dash: [6, 4],
+      label: 'Open',
+      labelPosition: 'right',
+    },
+    {
+      id: 'high',
+      price: 108.8,
+      color: processColor('#F44336'),
+      dash: [2, 4],
+      label: 'High',
+      labelPosition: 'right',
+    },
+    {
+      id: 'low',
+      price: 99.5,
+      color: processColor('#2196F3'),
+      dash: [2, 4],
+      label: 'Low',
+      labelPosition: 'right',
+    },
+  ]}
+/>
+```
+
+Each price line supports:
+- `id` (string)
+- `price` (number) or `value` (number)
+- `color` (processed color)
+- `width` (number)
+- `dash` (array of numbers, e.g. `[4, 4]`)
+- `label` (string)
+- `labelPosition` (`left` | `right`)
+- `labelColor` (processed color)
+- `visible` (boolean)
 
 ### Event Callbacks Detail
 
@@ -126,6 +182,7 @@ The `optionList` is a JSON string containing all chart configuration. Here's the
 | `targetList` | Object | `{}` | Technical indicator parameters |
 | `configList` | Object | `{}` | Visual styling configuration |
 | `drawList` | Object | `{}` | Drawing tools configuration |
+| `priceLines` | Array | `[]` | Optional alternative to `configList.referenceLineList` |
 
 ### Data Format (modelArray)
 
@@ -170,6 +227,10 @@ Each data point should contain the following fields:
 | `candleTextFontSize` | Number | Candle value text size |
 | `panelTextFontSize` | Number | Info panel text size |
 | `panelMinWidth` | Number | Minimum info panel width |
+| `referenceLineList` | Array | Horizontal reference lines for main chart: `{ id, price/value, color, width, dash, label, labelPosition, labelColor, visible }` |
+| `referenceLineWidth` | Number | Reference line stroke width (default for lines without width) |
+| `referenceLineDashWidth` | Number | Reference line dash length (default for lines without dash) |
+| `referenceLineDashSpace` | Number | Reference line dash spacing (default for lines without dash) |
 
 ### Drawing Configuration (drawList)
 

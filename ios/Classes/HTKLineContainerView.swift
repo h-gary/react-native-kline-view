@@ -17,6 +17,12 @@ class HTKLineContainerView: UIView {
     
     @objc var onDrawPointComplete: RCTBubblingEventBlock?
     
+    @objc var doubleTapToFitAll: Bool = true {
+        didSet {
+            klineView.shouldDoubleTapFitAll = doubleTapToFitAll
+        }
+    }
+    
     @objc var optionList: String? {
         didSet {
             guard let optionList = optionList else {
@@ -30,6 +36,9 @@ class HTKLineContainerView: UIView {
                         return
                     }
                     self?.configManager.reloadOptionList(optionListDict)
+                    if let priceLines = self?.priceLines {
+                        self?.configManager.referenceLineList = HTKLineReferenceLine.packModelArray(priceLines)
+                    }
                     DispatchQueue.main.async {
                         guard let self = self else { return }
                         self.reloadConfigManager(self.configManager)
@@ -41,8 +50,22 @@ class HTKLineContainerView: UIView {
         }
     }
 
+    @objc var priceLines: [[String: Any]]? {
+        didSet {
+            if let priceLines = priceLines {
+                configManager.referenceLineList = HTKLineReferenceLine.packModelArray(priceLines)
+            } else {
+                configManager.referenceLineList = []
+            }
+            DispatchQueue.main.async { [weak self] in
+                self?.klineView.setNeedsDisplay()
+            }
+        }
+    }
+
     lazy var klineView: HTKLineView = {
         let klineView = HTKLineView.init(CGRect.zero, configManager)
+        klineView.shouldDoubleTapFitAll = doubleTapToFitAll
         return klineView
     }()
     
@@ -194,7 +217,7 @@ class HTKLineContainerView: UIView {
         touchesEnded(touches, with: event)
     }
     
-    func touchesGesture(_ touched: Set<UITouch>, _ state: UIGestureRecognizerState) {
+    func touchesGesture(_ touched: Set<UITouch>, _ state: UIGestureRecognizer.State) {
         guard var location = touched.first?.location(in: self) else {
             shotView.shotPoint = nil
             return
@@ -210,4 +233,3 @@ class HTKLineContainerView: UIView {
     }
     
 }
-

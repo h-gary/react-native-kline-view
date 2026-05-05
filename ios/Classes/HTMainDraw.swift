@@ -74,6 +74,13 @@ class HTMainDraw: NSObject, HTKLineDrawProtocol {
     func drawLine(_ model: HTKLineModel, _ lastModel: HTKLineModel, _ maxValue: CGFloat, _ minValue: CGFloat, _ baseY: CGFloat, _ height: CGFloat, _ index: Int, _ lastIndex: Int, _ context: CGContext, _ configManager: HTKLineConfigManager) {
         if (configManager.isMinute) {
             drawLine(value: model.close, lastValue: lastModel.close, maxValue: maxValue, minValue: minValue, baseY: baseY, height: height, index: index, lastIndex: lastIndex, color: configManager.minuteLineColor, isBezier: true, context: context, configManager: configManager)
+            if configManager.mainType == .ma {
+                for (i, itemModel) in configManager.maList.enumerated() {
+                    guard model.maList.count > i, lastModel.maList.count > i else { continue }
+                    let color = configManager.targetColorList[itemModel.index]
+                    drawLine(value: model.maList[i].value, lastValue: lastModel.maList[i].value, maxValue: maxValue, minValue: minValue, baseY: baseY, height: height, index: index, lastIndex: lastIndex, color: color, isBezier: false, context: context, configManager: configManager)
+                }
+            }
         } else {
             switch configManager.mainType {
             case .none:

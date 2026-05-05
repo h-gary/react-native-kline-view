@@ -35,6 +35,57 @@ class HTKLineItemModel: NSObject {
 
 }
 
+class HTKLineReferenceLine: NSObject {
+
+    static let labelPositionLeft = "left"
+    static let labelPositionRight = "right"
+
+    var id = ""
+    var key = ""
+    var value: CGFloat = 0
+    var color: UIColor?
+    var width: CGFloat?
+    var dash: [CGFloat]?
+    var label: String?
+    var labelPosition: String = HTKLineReferenceLine.labelPositionRight
+    var labelColor: UIColor?
+    var visible: Bool = true
+
+    static func packModelArray(_ modelList: [[String: Any]]) -> [HTKLineReferenceLine] {
+        var modelArray = [HTKLineReferenceLine]()
+        for dictionary in modelList {
+            let priceValue = dictionary["price"] as? CGFloat
+            let valueValue = dictionary["value"] as? CGFloat
+            guard let value = priceValue ?? valueValue else {
+                continue
+            }
+            let itemModel = HTKLineReferenceLine()
+            itemModel.value = value
+            itemModel.id = dictionary["id"] as? String ?? ""
+            itemModel.key = dictionary["key"] as? String ?? ""
+            itemModel.color = RCTConvert.uiColor(dictionary["color"])
+            if let width = dictionary["width"] as? CGFloat {
+                itemModel.width = width
+            }
+            if let dash = dictionary["dash"] as? [NSNumber], dash.count > 0 {
+                itemModel.dash = dash.map { CGFloat(truncating: $0) }
+            } else if let dash = dictionary["dash"] as? [CGFloat], dash.count > 0 {
+                itemModel.dash = dash
+            }
+            itemModel.label = dictionary["label"] as? String
+            if let labelPosition = dictionary["labelPosition"] as? String {
+                itemModel.labelPosition = labelPosition
+            }
+            itemModel.labelColor = RCTConvert.uiColor(dictionary["labelColor"])
+            if let visible = dictionary["visible"] as? Bool {
+                itemModel.visible = visible
+            }
+            modelArray.append(itemModel)
+        }
+        return modelArray
+    }
+}
+
 
 class HTKLineModel: NSObject {
 

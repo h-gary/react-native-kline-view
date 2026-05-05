@@ -23,7 +23,9 @@ import com.github.fujianlian.klinechart.utils.ViewUtil;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * k线图
@@ -113,6 +115,10 @@ public abstract class BaseKLineChartView extends ScrollAndScaleView implements D
 
     private Paint mClosePriceRightTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+    private Paint mPriceLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    private Paint mPriceLineTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
     private LottieDrawable lottieDrawable = new LottieDrawable();
 
     private String lastLoadLottieSource = "";
@@ -194,6 +200,10 @@ public abstract class BaseKLineChartView extends ScrollAndScaleView implements D
 
         mClosePriceTrianglePaint.setStyle(Paint.Style.FILL);
 
+        mPriceLinePaint.setStyle(Paint.Style.STROKE);
+        mPriceLinePaint.setAntiAlias(true);
+        mPriceLineTextPaint.setAntiAlias(true);
+
     }
 
     @Override
@@ -274,7 +284,9 @@ public abstract class BaseKLineChartView extends ScrollAndScaleView implements D
             drawK(canvas);
             drawText(canvas);
             drawMaxAndMin(canvas);
+            drawCustomLabels(canvas);
             drawValue(canvas, isLongPress ? mSelectedIndex : mStopIndex);
+            drawPriceLines(canvas);
             drawClosePriceLine(canvas);
             drawSelector(canvas);
         }
@@ -752,6 +764,104 @@ public abstract class BaseKLineChartView extends ScrollAndScaleView implements D
         }
     }
 
+    private void drawCustomLabelValue(Canvas canvas, HTKLineCustomLabel label, float x, float y, boolean leftAlign) {
+        if (label == null || label.label == null || label.label.length() == 0) {
+            return;
+        }
+        Rect bounds = calculateMaxMin(label.label);
+        y += bounds.height() / 2f;
+        String lineString = "---";
+        String valueString = leftAlign ? lineString + label.label : label.label + lineString;
+        float drawX = x;
+        if (!leftAlign) {
+            float width = mMaxMinPaint.measureText(valueString);
+            drawX -= width;
+        }
+        int lastColor = mMaxMinPaint.getColor();
+        mMaxMinPaint.setColor(label.color);
+        canvas.drawText(valueString, drawX, y, mMaxMinPaint);
+        mMaxMinPaint.setColor(lastColor);
+    }
+
+    private void drawCustomLabels(Canvas canvas) {
+        if (configManager == null || configManager.customLabelList == null || configManager.customLabelList.isEmpty()) {
+            return;
+        }
+        Map<String, List<HTKLineCustomLabel>> labelMap = new HashMap<>();
+        for (HTKLineCustomLabel label : configManager.customLabelList) {
+            if (label == null || label.time == null || label.time.length() == 0 || label.label == null || label.label.length() == 0) {
+                continue;
+            }
+            List<HTKLineCustomLabel> list = labelMap.get(label.time);
+            if (list == null) {
+                list = new ArrayList<>();
+                labelMap.put(label.time, list);
+            }
+            list.add(label);
+        }
+        if (labelMap.isEmpty()) {
+            return;
+        }
+
+        float halfWidth = getWidth() / 2f;
+        for (int i = mStartIndex; i <= mStopIndex && i < mItemCount; i++) {
+            KLineEntity point = getItem(i);
+            List<HTKLineCustomLabel> labels = labelMap.get(point.Date);
+            if (labels == null || labels.isEmpty()) {
+                continue;
+            }
+            float baseX = scrollXtoViewX(getItemMiddleScrollX(i));
+            boolean leftAlign = baseX < halfWidth;
+            float baseY = yFromValue(point.getHighPrice());
+            for (int j = 0; j < labels.size(); j++) {
+                HTKLineCustomLabel label = labels.get(j);
+                Rect bounds = calculateMaxMin(label.label);
+                float offsetY = baseY - (bounds.height() + ViewUtil.Dp2Px(getContext(), 2)) * j;
+                drawCustomLabelValue(canvas, label, baseX, offsetY, leftAlign);
+            }
+        }
+    }
+
+    private void drawPriceLines(Canvas canvas) {
+        if (configManager == null || configManager.referenceLineList == null || configManager.referenceLineList.isEmpty()) {
+            return;
+        }
+        for (HTKLineReferenceLine line : configManager.referenceLineList) {
+            if (line == null || line.visible == null || !line.visible) {
+                continue;
+            }
+            float y = yFromValue(line.value);
+            if (y < mMainRect.top || y > mMainRect.bottom) {
+                continue;
+            }
+            int color = line.color != null ? line.color : configManager.candleTextColor;
+            float width = line.width != null ? line.width : 1f;
+            mPriceLinePaint.setColor(color);
+            mPriceLinePaint.setStrokeWidth(width > 0 ? width : 1f);
+            if (line.dash != null && line.dash.length > 0) {
+                mPriceLinePaint.setPathEffect(new DashPathEffect(line.dash, 0));
+            } else {
+                mPriceLinePaint.setPathEffect(null);
+            }
+            canvas.drawLine(0, y, mWidth, y, mPriceLinePaint);
+
+            if (line.label == null || line.label.length() == 0) {
+                continue;
+            }
+            int lastColor = mPriceLineTextPaint.getColor();
+            int labelColor = line.labelColor != null ? line.labelColor : configManager.textColor;
+            mPriceLineTextPaint.setColor(labelColor);
+            float textY = fixTextY1(y);
+            float x;
+            if (HTKLineReferenceLine.LABEL_POSITION_LEFT.equalsIgnoreCase(line.labelPosition)) {
+                x = ViewUtil.Dp2Px(getContext(), 4);
+            } else {
+                x = mWidth - mPriceLineTextPaint.measureText(line.label);
+            }
+            canvas.drawText(line.label, x, textY, mPriceLineTextPaint);
+            mPriceLineTextPaint.setColor(lastColor);
+        }
+    }
     /**
      * 画值
      *
@@ -818,6 +928,28 @@ public abstract class BaseKLineChartView extends ScrollAndScaleView implements D
         }
         initRect();
         initLottieView();
+        invalidate();
+    }
+    
+    public void fitAllBarsToBounds() {
+        if (mItemCount <= 0 || mDataLen <= 0) {
+            return;
+        }
+        float availableWidth = mWidth - configManager.paddingRight;
+        if (availableWidth <= 0) {
+            return;
+        }
+        float targetScale = availableWidth / mDataLen;
+        if (targetScale <= 0) {
+            return;
+        }
+        if (targetScale > getScaleXMax()) {
+            setScaleXMax(targetScale);
+        }
+        float oldScale = mScaleX;
+        mScaleX = targetScale;
+        onScaleChanged(mScaleX, oldScale);
+        setScrollX(0);
         invalidate();
     }
 
@@ -1406,6 +1538,8 @@ public abstract class BaseKLineChartView extends ScrollAndScaleView implements D
         mClosePriceTrianglePaint.setTypeface(typeface);
 
         mClosePriceRightTextPaint.setTypeface(typeface);
+
+        mPriceLineTextPaint.setTypeface(typeface);
     }
 
     /**
@@ -1414,6 +1548,7 @@ public abstract class BaseKLineChartView extends ScrollAndScaleView implements D
     public void setTextSize(float textSize) {
         mTextPaint.setTextSize(textSize);
         mClosePriceRightTextPaint.setTextSize(textSize);
+        mPriceLineTextPaint.setTextSize(textSize);
     }
 
     /**

@@ -68,6 +68,9 @@ class HTKLineConfigManager: NSObject {
 
     var modelArray = [HTKLineModel]()
 
+    var customLabelList = [HTKLineCustomLabel]()
+    var referenceLineList = [HTKLineReferenceLine]()
+    
     var shouldScrollToEnd = true
 
     var maList = [HTKLineItemModel]()
@@ -440,6 +443,16 @@ class HTKLineConfigManager: NSObject {
         closePriceRightLightLottieFloder = configList["closePriceRightLightLottieFloder"] as? String ?? ""
         closePriceRightLightLottieScale = configList["closePriceRightLightLottieScale"] as? CGFloat ?? 0
         closePriceRightLightLottieSource = configList["closePriceRightLightLottieSource"] as? String ?? ""
+        if let labelList = optionList["labelList"] as? [[String: Any]] {
+            customLabelList = HTKLineCustomLabel.packModelArray(labelList, defaultColor: candleTextColor)
+        } else {
+            customLabelList = []
+        }
+        if let priceLines = optionList["priceLines"] as? [[String: Any]] {
+            referenceLineList = HTKLineReferenceLine.packModelArray(priceLines)
+        } else {
+            referenceLineList = []
+        }
     }
 
 }

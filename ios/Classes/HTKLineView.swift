@@ -13,6 +13,12 @@ class HTKLineView: UIScrollView {
         
     var configManager: HTKLineConfigManager
     
+    var shouldDoubleTapFitAll = false
+    
+    var minScale: CGFloat = 0.3
+    
+    var maxScale: CGFloat = 3
+    
     lazy var drawContext: HTDrawContext = {
         let drawContext = HTDrawContext.init(self, configManager)
         return drawContext
@@ -74,9 +80,17 @@ class HTKLineView: UIScrollView {
         showsVerticalScrollIndicator = false
         backgroundColor = UIColor.clear
 
-        addGestureRecognizer(UILongPressGestureRecognizer.init(target: self, action: #selector(longPressSelector)))
-        addGestureRecognizer(UITapGestureRecognizer.init(target: self, action: #selector(tapSelector)))
-        addGestureRecognizer(UIPinchGestureRecognizer.init(target: self, action: #selector(pinchSelector)))
+        let longPressGesture = UILongPressGestureRecognizer.init(target: self, action: #selector(longPressSelector))
+        let singleTapGesture = UITapGestureRecognizer.init(target: self, action: #selector(tapSelector))
+        let doubleTapGesture = UITapGestureRecognizer.init(target: self, action: #selector(doubleTapSelector))
+        doubleTapGesture.numberOfTapsRequired = 2
+        singleTapGesture.require(toFail: doubleTapGesture)
+        let pinchGesture = UIPinchGestureRecognizer.init(target: self, action: #selector(pinchSelector))
+        
+        addGestureRecognizer(longPressGesture)
+        addGestureRecognizer(singleTapGesture)
+        addGestureRecognizer(doubleTapGesture)
+        addGestureRecognizer(pinchGesture)
     }
 
     required init?(coder: NSCoder) {
@@ -175,6 +189,8 @@ class HTKLineView: UIScrollView {
 
 
             drawHighLow(context)
+            drawCustomLabels(context)
+            drawPriceLines(context)
             drawTime(context)
             drawClosePrice(context)
             drawSelectedLine(context)
@@ -349,6 +365,101 @@ class HTKLineView: UIScrollView {
         drawValue(lowIndex, visibleModelArray[lowIndex].low)
 
     }
+
+    func drawCustomLabels(_ context: CGContext) {
+        let labelList = configManager.customLabelList
+        if labelList.isEmpty {
+            return
+        }
+
+        var labelMap = [String: [HTKLineCustomLabel]]()
+        for label in labelList {
+            labelMap[label.time, default: []].append(label)
+        }
+
+        let font = configManager.createFont(configManager.candleTextFontSize)
+        let textHeight = mainDraw.textHeight(font: font)
+        let lineString = "--"
+        let halfWidth = allWidth / 2
+
+        for (i, model) in visibleModelArray.enumerated() {
+            guard let labels = labelMap[model.dateString], !labels.isEmpty else {
+                continue
+            }
+
+            let offset = CGFloat(i + visibleRange.lowerBound) * configManager.itemWidth - contentOffset.x
+            let baseX = offset + configManager.itemWidth / 2
+            let leftAlign = offset < halfWidth
+
+            for (labelIndex, label) in labels.enumerated() {
+                var title = label.label
+                var x = baseX
+                if leftAlign {
+                    title = lineString + title
+                } else {
+                    title = title + lineString
+                    x -= mainDraw.textWidth(title: title, font: font)
+                }
+
+                var y = yFromValue(model.high) - textHeight / 2 - 1 - CGFloat(labelIndex) * (textHeight + 2)
+                y = max(mainBaseY, y)
+                mainDraw.drawText(title: title, point: CGPoint.init(x: x, y: y), color: label.color, font: font, context: context, configManager: configManager)
+            }
+        }
+    }
+
+
+    func drawPriceLines(_ context: CGContext) {
+        let lineList = configManager.referenceLineList
+        if lineList.isEmpty {
+            return
+        }
+        let font = configManager.createFont(configManager.rightTextFontSize)
+        let textHeight = mainDraw.textHeight(font: font)
+        for line in lineList where line.visible {
+            let y = yFromValue(line.value)
+            if y < mainBaseY - textHeight || y > mainBaseY + mainHeight + textHeight {
+                continue
+            }
+            let color = line.color ?? configManager.candleTextColor
+            let width = line.width ?? configManager.lineWidth
+            let dashList = line.dash ?? []
+            context.saveGState()
+            context.setStrokeColor(color.cgColor)
+            context.setLineWidth(width)
+            if !dashList.isEmpty {
+                context.setLineDash(phase: 0, lengths: dashList)
+            } else {
+                context.setLineDash(phase: 0, lengths: [])
+            }
+            context.addLines(between: [CGPoint.init(x: 0, y: y), CGPoint.init(x: allWidth, y: y)])
+            context.strokePath()
+            context.restoreGState()
+
+            guard let label = line.label, !label.isEmpty else {
+                continue
+            }
+            let labelWidth = mainDraw.textWidth(title: label, font: font)
+            let baseX = allWidth
+            let x: CGFloat
+            if line.labelPosition == HTKLineReferenceLine.labelPositionLeft {
+                x = 4
+            } else {
+                x = baseX - labelWidth
+            }
+            let labelY = y - textHeight / 2
+            let labelColor = line.labelColor ?? configManager.textColor
+            mainDraw.drawText(
+                title: label,
+                point: CGPoint.init(x: x, y: labelY),
+                color: labelColor,
+                font: font,
+                context: context,
+                configManager: configManager
+            )
+        }
+    }
+
 
     func drawClosePrice(_ context: CGContext) {
         guard let lastModel = configManager.modelArray.last else {
@@ -631,6 +742,36 @@ extension HTKLineView: UIScrollViewDelegate {
         selectedIndex = -1
         self.setNeedsDisplay()
     }
+    
+    @objc
+    func doubleTapSelector(_ gesture: UITapGestureRecognizer) {
+        selectedIndex = -1
+        guard shouldDoubleTapFitAll else {
+            self.setNeedsDisplay()
+            return
+        }
+        fitAllModelsToBounds()
+    }
+    
+    func fitAllModelsToBounds() {
+        let modelCount = configManager.modelArray.count
+        let availableWidth = bounds.size.width - configManager.paddingRight
+        let baseContentWidth = configManager._itemWidth * CGFloat(modelCount)
+        guard modelCount > 0,
+              availableWidth > 0,
+              baseContentWidth > 0 else {
+            self.setNeedsDisplay()
+            return
+        }
+        
+        let targetScale = availableWidth / baseContentWidth
+        scale = targetScale
+        maxScale = max(maxScale, targetScale)
+        
+        reloadContentSize()
+        reloadContentOffset(0)
+        scrollViewDidScroll(self)
+    }
 
     @objc
     func pinchSelector(_ gesture: UIPinchGestureRecognizer) {
@@ -640,7 +781,7 @@ extension HTKLineView: UIScrollViewDelegate {
         default:
             break
         }
-        scale = max(0.3, min(scale, 3))
+        scale = max(minScale, min(scale, maxScale))
 
         let width = bounds.size.width
         let halfWidth = width / 2
