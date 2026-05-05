@@ -80,7 +80,7 @@ public class RNKLineView extends SimpleViewManager<HTKLineContainerView> {
         containerView.postInvalidate();
     }
     
-    @ReactProp(name = "doubleTapToFitAll", defaultBoolean = false)
+    @ReactProp(name = "doubleTapToFitAll", defaultBoolean = true)
     public void setDoubleTapToFitAll(final HTKLineContainerView containerView, boolean doubleTapToFitAll) {
         containerView.setDoubleTapToFitAll(doubleTapToFitAll);
     }

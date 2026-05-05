@@ -30,7 +30,7 @@ class HTDrawContext {
     
     var breakTouch = false
     
-    func touchesGesture(_ location: CGPoint, _ translation: CGPoint, _ state: UIGestureRecognizerState) {
+    func touchesGesture(_ location: CGPoint, _ translation: CGPoint, _ state: UIGestureRecognizer.State) {
         guard let klineView = klineView, breakTouch == false else {
             if state == .ended {
                 breakTouch = false
@@ -70,7 +70,7 @@ class HTDrawContext {
             break
         }
         if HTDrawItem.canResponseTouch(drawItemList, location, translation, state, klineView) {
-            if state == .began, let moveItem = HTDrawItem.findTouchMoveItem(drawItemList), let moveItemIndex = drawItemList.index(of: moveItem) {
+            if state == .began, let moveItem = HTDrawItem.findTouchMoveItem(drawItemList), let moveItemIndex = drawItemList.firstIndex(of: moveItem) {
                 configManager.onDrawItemDidTouch?(moveItem, moveItemIndex)
             }
             setNeedsDisplay()
