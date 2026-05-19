@@ -45,13 +45,32 @@ public class HTKLineContainerView extends RelativeLayout {
         super.onAttachedToWindow();
         ViewGroup willShotView = (ViewGroup)getParent();
         if (shotView == null) {
+            ViewGroup overlayHost = findShotOverlayHost(willShotView);
+            if (overlayHost == null) {
+                return;
+            }
             shotView = new HTShotView(getContext(), willShotView);
             shotView.setEnabled(false);
             shotView.dimension = 300;
             RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(shotView.dimension, shotView.dimension);
             layoutParams.setMargins(50, 50, 0, 0);
-            ((ViewGroup)willShotView.getParent().getParent()).addView(shotView, layoutParams);
+            overlayHost.addView(shotView, layoutParams);
         }
+    }
+
+    private ViewGroup findShotOverlayHost(ViewGroup anchorView) {
+        if (anchorView == null) {
+            return null;
+        }
+        android.view.ViewParent currentParent = anchorView.getParent();
+        while (currentParent instanceof ViewGroup) {
+            ViewGroup currentGroup = (ViewGroup) currentParent;
+            if (!(currentGroup instanceof ScrollView)) {
+                return currentGroup;
+            }
+            currentParent = currentGroup.getParent();
+        }
+        return null;
     }
 
     public void reloadConfigManager() {
