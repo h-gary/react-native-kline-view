@@ -38,6 +38,16 @@ public class HTKLineContainerView extends RelativeLayout {
         klineView.setDateTimeFormatter(new DateFormatter());
         klineView.configManager = configManager;
         addView(klineView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        klineView.setRefreshListener(new KLineChartView.KChartRefreshListener() {
+            @Override
+            public void onLoadMoreBegin(KLineChartView chart) {
+                reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                        HTKLineContainerView.this.getId(),
+                        RNKLineView.onEndReachedKey,
+                        Arguments.createMap()
+                );
+            }
+        });
     }
 
     @Override
