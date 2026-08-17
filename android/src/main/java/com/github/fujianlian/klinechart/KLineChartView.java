@@ -30,6 +30,7 @@ public class KLineChartView extends BaseKLineChartView {
     private boolean isLoadMoreEnd = false;
     private boolean mLastScrollEnable;
     private boolean mLastScaleEnable;
+    private boolean didReachLeftSide = false;
 
     private KChartRefreshListener mRefreshListener;
 
@@ -161,8 +162,21 @@ public class KLineChartView extends BaseKLineChartView {
     }
 
     @Override
+    protected void onScrollChanged(int l, int t, int oldl, int oldt) {
+        super.onScrollChanged(l, t, oldl, oldt);
+        if (l > getMinScrollX()) {
+            didReachLeftSide = false;
+        } else if (isTouch()) {
+            onLeftSide();
+        }
+    }
+
+    @Override
     public void onLeftSide() {
-        // showLoading();
+        if (!didReachLeftSide && mRefreshListener != null) {
+            didReachLeftSide = true;
+            mRefreshListener.onLoadMoreBegin(this);
+        }
     }
 
     @Override

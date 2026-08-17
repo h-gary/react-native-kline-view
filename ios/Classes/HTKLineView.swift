@@ -14,6 +14,10 @@ class HTKLineView: UIScrollView {
     var configManager: HTKLineConfigManager
     
     var shouldDoubleTapFitAll = false
+
+    var onEndReached: (() -> Void)?
+
+    private var didReachLeftEdge = false
     
     var minScale: CGFloat = 0.3
     
@@ -714,6 +718,15 @@ extension HTKLineView: UIScrollViewDelegate {
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         let contentOffsetX = scrollView.contentOffset.x
+        if contentOffsetX <= 0, scrollView.isTracking || scrollView.isDecelerating {
+            if !didReachLeftEdge {
+                didReachLeftEdge = true
+                onEndReached?()
+            }
+        } else if contentOffsetX > 0 {
+            didReachLeftEdge = false
+        }
+
         var visibleStartIndex = Int(floor(contentOffsetX / configManager.itemWidth))
         var visibleEndIndex = Int(ceil((contentOffsetX + scrollView.bounds.size.width) / configManager.itemWidth))
         visibleStartIndex = min(max(0, visibleStartIndex), configManager.modelArray.count - 1)
