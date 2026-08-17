@@ -606,12 +606,12 @@ public abstract class BaseKLineChartView extends ScrollAndScaleView implements D
         float scrollX = viewXToScrollX(0);
         if (scrollX >= startX && scrollX <= stopX) {
             String text = getItem(mStartIndex).Date;
-            canvas.drawText(text, -mTextPaint.measureText(text) / 2, y, mTextPaint);
+            canvas.drawText(text, 0, y, mTextPaint);
         }
         scrollX = viewXToScrollX(mWidth);
         if (scrollX >= startX && scrollX <= stopX) {
             String text = getItem(mStopIndex).Date;
-            canvas.drawText(text, mWidth - mTextPaint.measureText(text) / 2, y, mTextPaint);
+            canvas.drawText(text, mWidth - mTextPaint.measureText(text), y, mTextPaint);
         }
 
     }
